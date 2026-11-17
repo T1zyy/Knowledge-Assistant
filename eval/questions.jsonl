@@ -1,0 +1,12 @@
+{"question":"Какой срок действия временного VPN доступа?","source":"vpn.txt","contains":"14"}
+{"question":"Что обязательно для подключения к VPN?","source":"vpn.txt","contains":"аутентификация"}
+{"question":"Куда подают заявку на продление VPN?","source":"vpn.txt","contains":"каталог"}
+{"question":"Сколько рабочих дней до выхода сотрудника нужно для заявки на выдачу ноутбука?","source":"onboarding.md","contains":"3"}
+{"question":"Кто утверждает форму выдачи ноутбука?","source":"onboarding.md","contains":"руководитель"}
+{"question":"Когда проходят вводный курс по информационной безопасности?","source":"onboarding.md","contains":"первой недели"}
+{"question":"Какой лимит на гостиницу в командировке?","source":"expenses.pdf","contains":"6000"}
+{"question":"Куда подают отчёт о командировке?","source":"expenses.pdf","contains":"бухгалтерию"}
+{"question":"Какой расход топлива у служебного автомобиля?","source":null,"contains":null}
+{"question":"Какой размер годовой премии?","source":null,"contains":null}
+{"question":"Когда меняют противопожарные датчики?","source":null,"contains":null}
+{"question":"Какая температура допускается для серверного помещения?","source":null,"contains":null}

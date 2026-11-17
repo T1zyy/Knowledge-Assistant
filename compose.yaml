@@ -1,0 +1,85 @@
+name: ai-knowledge-assistant
+
+x-app: &app
+  build: .
+  image: ai-knowledge-assistant:local
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql://assistant:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/assistant
+    REDIS_URL: redis://redis:6379/0
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.2-pg16
+    environment:
+      POSTGRES_DB: assistant
+      POSTGRES_USER: assistant
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assistant -d assistant"]
+      interval: 4s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:7.4.7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 4s
+      timeout: 3s
+      retries: 15
+
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    init: true
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=5)"
+      interval: 8s
+      timeout: 6s
+      retries: 8
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.48.4
+    profiles: ["automation"]
+    ports:
+      - "127.0.0.1:5678:5678"
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_SECURE_COOKIE: "false"
+      N8N_PAYLOAD_SIZE_MAX: "3"
+      N8N_FORMDATA_FILE_SIZE_MAX: "2"
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      EXECUTIONS_DATA_SAVE_ON_PROGRESS: "false"
+    volumes:
+      - n8n-data:/home/node/.n8n
+
+volumes:
+  postgres-data:
+  n8n-data:

@@ -1,0 +1,90 @@
+{
+  "name": "AI Knowledge Assistant - ingest document",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "knowledge-assistant/documents",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "c39120b6-ead0-4d1d-bd14-1f929ceee046",
+      "name": "Receive document",
+      "webhookId": "487129dd-c4ce-4a61-bded-65dc329bdb70"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/documents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file"
+            },
+            {
+              "name": "allow_external",
+              "value": "={{ $json.body?.allow_external === 'true' ? 'true' : 'false' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 90000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0],
+      "id": "ce840115-f80d-4ee5-b947-ed61e37fae5c",
+      "name": "Index in FastAPI",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.statusCode >= 200 && $json.statusCode < 300 ? { status: 'indexed', document: $json.body } : { status: 'failed', error: $json.body?.error ?? { code: 'api_unavailable', message: 'Indexing API did not return a usable response' }, request_id: $json.body?.request_id ?? null } }}",
+        "options": {
+          "responseCode": "={{ Number($json.statusCode || 502) }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [560, 0],
+      "id": "857918dd-68da-4c30-a298-3a5d264c3420",
+      "name": "Report ingestion result"
+    }
+  ],
+  "connections": {
+    "Receive document": {
+      "main": [[{"node": "Index in FastAPI", "type": "main", "index": 0}]]
+    },
+    "Index in FastAPI": {
+      "main": [[{"node": "Report ingestion result", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "active": false,
+  "pinData": {}
+}
